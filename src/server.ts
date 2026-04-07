@@ -11,7 +11,7 @@ import todoRoutes from "./routes/todos";
 dotenv.config();
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || "development";
 
 // Security middleware
@@ -92,12 +92,12 @@ process.on("SIGINT", () => {
   process.exit(0);
 });
 
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, () => {
   console.log(`Server running on port ${PORT} in ${NODE_ENV} mode`);
-  console.log(`Health check available at http://0.0.0.0:${PORT}/health`);
+  console.log(`Health check available at http://localhost:${PORT}/health`);
   console.log(`API endpoints:`);
-  console.log(`  - Auth: http://0.0.0.0:${PORT}/api/auth`);
-  console.log(`  - Todos: http://0.0.0.0:${PORT}/api/todos`);
+  console.log(`  - Auth: http://localhost:${PORT}/api/auth`);
+  console.log(`  - Todos: http://localhost:${PORT}/api/todos`);
 });
 
 export default app;
