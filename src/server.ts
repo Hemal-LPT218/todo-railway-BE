@@ -11,7 +11,7 @@ import todoRoutes from "./routes/todos";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;
 const NODE_ENV = process.env.NODE_ENV || "development";
 
 // Security middleware
@@ -43,13 +43,23 @@ if (NODE_ENV !== "test") {
 
 // Health check endpoint
 app.get("/health", (req, res) => {
-  res.status(200).json({
-    status: "OK",
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: NODE_ENV,
-    version: process.env.npm_package_version || "1.0.0"
-  });
+  try {
+    res.status(200).json({
+      status: "OK",
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: NODE_ENV,
+      version: process.env.npm_package_version || "1.0.0",
+      port: PORT
+    });
+  } catch (error) {
+    console.error('Health check error:', error);
+    res.status(500).json({
+      status: "ERROR",
+      timestamp: new Date().toISOString(),
+      error: "Health check failed"
+    });
+  }
 });
 
 // Root endpoint
@@ -98,12 +108,12 @@ process.on("SIGINT", () => {
   process.exit(0);
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT} in ${NODE_ENV} mode`);
-  console.log(`Health check available at http://localhost:${PORT}/health`);
+  console.log(`Health check available at http://0.0.0.0:${PORT}/health`);
   console.log(`API endpoints:`);
-  console.log(`  - Auth: http://localhost:${PORT}/api/auth`);
-  console.log(`  - Todos: http://localhost:${PORT}/api/todos`);
+  console.log(`  - Auth: http://0.0.0.0:${PORT}/api/auth`);
+  console.log(`  - Todos: http://0.0.0.0:${PORT}/api/todos`);
 });
 
 export default app;
