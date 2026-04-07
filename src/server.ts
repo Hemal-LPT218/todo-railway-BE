@@ -10,6 +10,12 @@ import todoRoutes from "./routes/todos";
 // Load environment variables
 dotenv.config();
 
+console.log('Starting server with environment:', {
+  NODE_ENV: process.env.NODE_ENV,
+  PORT: process.env.PORT,
+  JWT_SECRET: process.env.JWT_SECRET ? 'SET' : 'NOT_SET'
+});
+
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 const NODE_ENV = process.env.NODE_ENV || "development";
@@ -108,12 +114,44 @@ process.on("SIGINT", () => {
   process.exit(0);
 });
 
-app.listen(PORT, '0.0.0.0', () => {
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
+
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT} in ${NODE_ENV} mode`);
   console.log(`Health check available at http://0.0.0.0:${PORT}/health`);
   console.log(`API endpoints:`);
   console.log(`  - Auth: http://0.0.0.0:${PORT}/api/auth`);
   console.log(`  - Todos: http://0.0.0.0:${PORT}/api/todos`);
+});
+
+server.on('error', (error: any) => {
+  console.error('Server error:', error);
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  const bind = typeof PORT === 'string' ? 'Pipe ' + PORT : 'Port ' + PORT;
+
+  switch (error.code) {
+    case 'EACCES':
+      console.error(`${bind} requires elevated privileges`);
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(`${bind} is already in use`);
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
 });
 
 export default app;
