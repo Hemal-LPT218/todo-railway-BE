@@ -1,5 +1,5 @@
 import { Router, Response } from 'express';
-import { Todo } from '../models/Todo';
+import { TodoPrisma } from '../models/Todo.prisma';
 import { Todo as ITodo, ApiResponse, AuthRequest } from '../types';
 import { authenticateToken } from '../middleware/auth';
 
@@ -12,7 +12,7 @@ router.use(authenticateToken);
 router.get('/', async (req: AuthRequest, res: Response<ApiResponse<ITodo[]>>) => {
   try {
     const userId = req.user!.id;
-    const todos = await Todo.findByUserId(userId);
+    const todos = await TodoPrisma.findByUserId(userId);
 
     res.json({
       success: true,
@@ -40,7 +40,7 @@ router.post('/', async (req: AuthRequest, res: Response<ApiResponse<ITodo>>) => 
       });
     }
 
-    const todo = await Todo.create({ text: text.trim(), userId });
+    const todo = await TodoPrisma.create({ text: text.trim(), userId });
 
     res.status(201).json({
       success: true,
@@ -70,7 +70,7 @@ router.put('/:id', async (req: AuthRequest, res: Response<ApiResponse<ITodo>>) =
     }
 
     // Check if todo exists and belongs to user
-    const existingTodo = await Todo.findById(todoId);
+    const existingTodo = await TodoPrisma.findById(todoId);
     if (!existingTodo || existingTodo.userId !== userId) {
       return res.status(404).json({
         success: false,
@@ -82,7 +82,7 @@ router.put('/:id', async (req: AuthRequest, res: Response<ApiResponse<ITodo>>) =
     if (text !== undefined) updateData.text = text;
     if (completed !== undefined) updateData.completed = completed;
 
-    const updatedTodo = await Todo.update(todoId, userId, updateData);
+    const updatedTodo = await TodoPrisma.update(todoId, userId, updateData);
 
     if (!updatedTodo) {
       return res.status(500).json({
@@ -118,7 +118,7 @@ router.delete('/:id', async (req: AuthRequest, res: Response<ApiResponse>) => {
     }
 
     // Check if todo exists and belongs to user
-    const existingTodo = await Todo.findById(todoId);
+    const existingTodo = await TodoPrisma.findById(todoId);
     if (!existingTodo || existingTodo.userId !== userId) {
       return res.status(404).json({
         success: false,
@@ -126,7 +126,7 @@ router.delete('/:id', async (req: AuthRequest, res: Response<ApiResponse>) => {
       });
     }
 
-    const deleted = await Todo.delete(todoId, userId);
+    const deleted = await TodoPrisma.delete(todoId, userId);
 
     if (!deleted) {
       return res.status(500).json({

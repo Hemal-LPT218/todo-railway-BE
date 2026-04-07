@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { User } from '../models/User';
+import { UserPrisma } from '../models/User.prisma';
 import type { User as IUser, UserResponse } from '../types';
 
 interface AuthRequest extends Request {
@@ -34,7 +34,7 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
       });
     }
 
-    const user = await User.findById(decoded.userId);
+    const user = await UserPrisma.findById(decoded.userId);
     if (!user) {
       return res.status(403).json({
         success: false,

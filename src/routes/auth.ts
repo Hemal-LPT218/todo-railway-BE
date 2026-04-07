@@ -1,7 +1,6 @@
 import { Router, Response } from 'express';
-import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
-import { User } from '../models/User';
+import { UserPrisma } from '../models/User.prisma';
 import { LoginRequest, RegisterRequest, AuthResponse, ApiResponse, UserResponse } from '../types';
 
 const router = Router();
@@ -27,7 +26,7 @@ router.post('/register', async (req: any, res: Response<ApiResponse<AuthResponse
     }
 
     // Check if user already exists
-    const existingUserByUsername = await User.existsByUsername(username);
+    const existingUserByUsername = await UserPrisma.existsByUsername(username);
     if (existingUserByUsername) {
       return res.status(409).json({
         success: false,
@@ -35,7 +34,7 @@ router.post('/register', async (req: any, res: Response<ApiResponse<AuthResponse
       });
     }
 
-    const existingUserByEmail = await User.existsByEmail(email);
+    const existingUserByEmail = await UserPrisma.existsByEmail(email);
     if (existingUserByEmail) {
       return res.status(409).json({
         success: false,
@@ -44,7 +43,7 @@ router.post('/register', async (req: any, res: Response<ApiResponse<AuthResponse
     }
 
     // Create new user
-    const user = await User.create({ username, email, password });
+    const user = await UserPrisma.create({ username, email, password });
 
     // Generate JWT token
     const jwtSecret = process.env.JWT_SECRET;
@@ -94,7 +93,7 @@ router.post('/login', async (req: any, res: Response<ApiResponse<AuthResponse>>)
     }
 
     // Validate credentials
-    const user = await User.validatePassword(username, password);
+    const user = await UserPrisma.validatePassword(username, password);
     if (!user) {
       return res.status(401).json({
         success: false,

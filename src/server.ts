@@ -6,7 +6,7 @@ import compression from "compression";
 import morgan from "morgan";
 import authRoutes from "./routes/auth";
 import todoRoutes from "./routes/todos";
-import { database } from "./config/database";
+import { prisma } from "./lib/prisma";
 
 // Load environment variables
 dotenv.config();
@@ -104,10 +104,10 @@ app.listen(PORT, () => {
 // Initialize database and start server
 const startServer = async () => {
   try {
-    await database.initialize();
-    console.log('✅ Database initialized successfully');
+    await prisma.$connect();
+    console.log('✅ Database connected successfully');
   } catch (error) {
-    console.error('❌ Failed to initialize database:', error);
+    console.error('❌ Failed to connect to database:', error);
     process.exit(1);
   }
 };
