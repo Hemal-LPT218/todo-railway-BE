@@ -1,13 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { memoryStore } from '../storage/memoryStore';
-import { UserResponse } from '../types';
+import { User } from '../models/User';
+import type { User as IUser, UserResponse } from '../types';
 
 interface AuthRequest extends Request {
   user?: UserResponse;
 }
 
-export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
@@ -26,7 +26,7 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
     });
   }
 
-  jwt.verify(token, jwtSecret, (err: any, decoded: any) => {
+  jwt.verify(token, jwtSecret, async (err: any, decoded: any) => {
     if (err) {
       return res.status(403).json({
         success: false,
@@ -34,7 +34,7 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
       });
     }
 
-    const user = memoryStore.getUserById(decoded.userId);
+    const user = await User.findById(decoded.userId);
     if (!user) {
       return res.status(403).json({
         success: false,
@@ -42,9 +42,13 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
       });
     }
 
-    // Remove password from user object
-    const { password, ...userResponse } = user;
-    req.user = userResponse;
+    req.user = {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      createdAt: user.createdAt
+    };
+
     next();
   });
 };

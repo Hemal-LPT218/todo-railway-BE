@@ -11,7 +11,7 @@ export class MemoryStore {
     const user: User = {
       ...userData,
       id: this.nextUserId.toString(),
-      createdAt: new Date()
+      createdAt: new Date().toISOString()
     };
     this.users.set(user.id, user);
     this.nextUserId++;
@@ -45,8 +45,8 @@ export class MemoryStore {
     const todo: Todo = {
       ...todoData,
       id: this.nextTodoId++,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
     this.todos.set(todo.id, todo);
     return todo;
@@ -67,7 +67,7 @@ export class MemoryStore {
     const updatedTodo = {
       ...todo,
       ...updates,
-      updatedAt: new Date()
+      updatedAt: new Date().toISOString()
     };
     this.todos.set(id, updatedTodo);
     return updatedTodo;

@@ -1,16 +1,18 @@
+import { Request } from 'express';
+
 export interface User {
   id: string;
   username: string;
   email: string;
   password: string;
-  createdAt: Date;
+  createdAt: string;
 }
 
 export interface UserResponse {
   id: string;
   username: string;
   email: string;
-  createdAt: Date;
+  createdAt: string;
 }
 
 export interface Todo {
@@ -18,8 +20,8 @@ export interface Todo {
   text: string;
   completed: boolean;
   userId: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface LoginRequest {
@@ -43,4 +45,8 @@ export interface ApiResponse<T = any> {
   data?: T;
   message?: string;
   error?: string;
+}
+
+export interface AuthRequest extends Request {
+  user?: UserResponse;
 }

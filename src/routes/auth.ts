@@ -1,8 +1,8 @@
 import { Router, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
-import { memoryStore } from '../storage/memoryStore';
-import { LoginRequest, RegisterRequest, AuthResponse, ApiResponse } from '../types';
+import { User } from '../models/User';
+import { LoginRequest, RegisterRequest, AuthResponse, ApiResponse, UserResponse } from '../types';
 
 const router = Router();
 
@@ -27,32 +27,24 @@ router.post('/register', async (req: any, res: Response<ApiResponse<AuthResponse
     }
 
     // Check if user already exists
-    const existingUserByUsername = memoryStore.getUserByUsername(username);
+    const existingUserByUsername = await User.existsByUsername(username);
     if (existingUserByUsername) {
-      return res.status(400).json({
+      return res.status(409).json({
         success: false,
         error: 'Username already exists'
       });
     }
 
-    const existingUserByEmail = memoryStore.getUserByEmail(email);
+    const existingUserByEmail = await User.existsByEmail(email);
     if (existingUserByEmail) {
-      return res.status(400).json({
+      return res.status(409).json({
         success: false,
         error: 'Email already exists'
       });
     }
 
-    // Hash password
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-    // Create user
-    const user = memoryStore.createUser({
-      username,
-      email,
-      password: hashedPassword
-    });
+    // Create new user
+    const user = await User.create({ username, email, password });
 
     // Generate JWT token
     const jwtSecret = process.env.JWT_SECRET;
@@ -70,7 +62,7 @@ router.post('/register', async (req: any, res: Response<ApiResponse<AuthResponse
     );
 
     // Remove password from response
-    const { password: _, ...userResponse } = user;
+    const { password: _, ...userResponse } = user as any;
 
     res.status(201).json({
       success: true,
@@ -101,18 +93,9 @@ router.post('/login', async (req: any, res: Response<ApiResponse<AuthResponse>>)
       });
     }
 
-    // Find user
-    const user = memoryStore.getUserByUsername(username);
+    // Validate credentials
+    const user = await User.validatePassword(username, password);
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid credentials'
-      });
-    }
-
-    // Check password
-    const isValidPassword = await bcrypt.compare(password, user.password);
-    if (!isValidPassword) {
       return res.status(401).json({
         success: false,
         error: 'Invalid credentials'
@@ -135,7 +118,7 @@ router.post('/login', async (req: any, res: Response<ApiResponse<AuthResponse>>)
     );
 
     // Remove password from response
-    const { password: _, ...userResponse } = user;
+    const { password: _, ...userResponse } = user as any;
 
     res.json({
       success: true,

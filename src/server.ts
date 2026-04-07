@@ -6,6 +6,7 @@ import compression from "compression";
 import morgan from "morgan";
 import authRoutes from "./routes/auth";
 import todoRoutes from "./routes/todos";
+import { database } from "./config/database";
 
 // Load environment variables
 dotenv.config();
@@ -99,5 +100,18 @@ app.listen(PORT, () => {
   console.log(`  - Auth: http://localhost:${PORT}/api/auth`);
   console.log(`  - Todos: http://localhost:${PORT}/api/todos`);
 });
+
+// Initialize database and start server
+const startServer = async () => {
+  try {
+    await database.initialize();
+    console.log('✅ Database initialized successfully');
+  } catch (error) {
+    console.error('❌ Failed to initialize database:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
 
 export default app;

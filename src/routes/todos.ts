@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
-import { memoryStore } from '../storage/memoryStore';
-import { authenticateToken, AuthRequest } from '../middleware/auth';
-import { Todo, ApiResponse } from '../types';
+import { Todo } from '../models/Todo';
+import { Todo as ITodo, ApiResponse, AuthRequest } from '../types';
+import { authenticateToken } from '../middleware/auth';
 
 const router = Router();
 
@@ -9,10 +9,10 @@ const router = Router();
 router.use(authenticateToken);
 
 // Get all todos for the authenticated user
-router.get('/', (req: AuthRequest, res: Response<ApiResponse<Todo[]>>) => {
+router.get('/', async (req: AuthRequest, res: Response<ApiResponse<ITodo[]>>) => {
   try {
     const userId = req.user!.id;
-    const todos = memoryStore.getTodosByUserId(userId);
+    const todos = await Todo.findByUserId(userId);
 
     res.json({
       success: true,
@@ -28,23 +28,19 @@ router.get('/', (req: AuthRequest, res: Response<ApiResponse<Todo[]>>) => {
 });
 
 // Create a new todo
-router.post('/', (req: AuthRequest, res: Response<ApiResponse<Todo>>) => {
+router.post('/', async (req: AuthRequest, res: Response<ApiResponse<ITodo>>) => {
   try {
     const userId = req.user!.id;
     const { text } = req.body;
 
-    if (!text || typeof text !== 'string' || text.trim() === '') {
+    if (!text || text.trim() === '') {
       return res.status(400).json({
         success: false,
         error: 'Todo text is required'
       });
     }
 
-    const todo = memoryStore.createTodo({
-      text: text.trim(),
-      completed: false,
-      userId
-    });
+    const todo = await Todo.create({ text: text.trim(), userId });
 
     res.status(201).json({
       success: true,
@@ -60,7 +56,7 @@ router.post('/', (req: AuthRequest, res: Response<ApiResponse<Todo>>) => {
 });
 
 // Update a todo (toggle completion or update text)
-router.put('/:id', (req: AuthRequest, res: Response<ApiResponse<Todo>>) => {
+router.put('/:id', async (req: AuthRequest, res: Response<ApiResponse<ITodo>>) => {
   try {
     const userId = req.user!.id;
     const todoId = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
@@ -73,37 +69,27 @@ router.put('/:id', (req: AuthRequest, res: Response<ApiResponse<Todo>>) => {
       });
     }
 
-    const existingTodo = memoryStore.getTodoById(todoId);
-    if (!existingTodo) {
+    // Check if todo exists and belongs to user
+    const existingTodo = await Todo.findById(todoId);
+    if (!existingTodo || existingTodo.userId !== userId) {
       return res.status(404).json({
         success: false,
         error: 'Todo not found'
       });
     }
 
-    if (existingTodo.userId !== userId) {
-      return res.status(403).json({
+    const updateData: Partial<Pick<ITodo, 'text' | 'completed'>> = {};
+    if (text !== undefined) updateData.text = text;
+    if (completed !== undefined) updateData.completed = completed;
+
+    const updatedTodo = await Todo.update(todoId, userId, updateData);
+
+    if (!updatedTodo) {
+      return res.status(500).json({
         success: false,
-        error: 'Access denied'
+        error: 'Failed to update todo'
       });
     }
-
-    const updates: Partial<Todo> = {};
-    if (typeof text === 'string' && text.trim() !== '') {
-      updates.text = text.trim();
-    }
-    if (typeof completed === 'boolean') {
-      updates.completed = completed;
-    }
-
-    if (Object.keys(updates).length === 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'No valid updates provided'
-      });
-    }
-
-    const updatedTodo = memoryStore.updateTodo(todoId, updates);
 
     res.json({
       success: true,
@@ -119,7 +105,7 @@ router.put('/:id', (req: AuthRequest, res: Response<ApiResponse<Todo>>) => {
 });
 
 // Delete a todo
-router.delete('/:id', (req: AuthRequest, res: Response<ApiResponse>) => {
+router.delete('/:id', async (req: AuthRequest, res: Response<ApiResponse>) => {
   try {
     const userId = req.user!.id;
     const todoId = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
@@ -131,34 +117,28 @@ router.delete('/:id', (req: AuthRequest, res: Response<ApiResponse>) => {
       });
     }
 
-    const existingTodo = memoryStore.getTodoById(todoId);
-    if (!existingTodo) {
+    // Check if todo exists and belongs to user
+    const existingTodo = await Todo.findById(todoId);
+    if (!existingTodo || existingTodo.userId !== userId) {
       return res.status(404).json({
         success: false,
         error: 'Todo not found'
       });
     }
 
-    if (existingTodo.userId !== userId) {
-      return res.status(403).json({
-        success: false,
-        error: 'Access denied'
-      });
-    }
+    const deleted = await Todo.delete(todoId, userId);
 
-    const deleted = memoryStore.deleteTodo(todoId);
-
-    if (deleted) {
-      res.json({
-        success: true,
-        message: 'Todo deleted successfully'
-      });
-    } else {
-      res.status(500).json({
+    if (!deleted) {
+      return res.status(500).json({
         success: false,
         error: 'Failed to delete todo'
       });
     }
+
+    res.json({
+      success: true,
+      message: 'Todo deleted successfully'
+    });
   } catch (error) {
     console.error('Delete todo error:', error);
     res.status(500).json({
