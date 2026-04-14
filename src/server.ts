@@ -18,18 +18,10 @@ const NODE_ENV = process.env.NODE_ENV || "development";
 // Security middleware
 app.use(helmet());
 
-// CORS configuration
-const corsOptions = {
-  origin: process.env.CORS_ORIGIN,   // ✅ exact frontend URL
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-};
-
-app.use(cors(corsOptions));
-
-// ✅ VERY IMPORTANT (preflight)
-app.options("*", cors(corsOptions));
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
 
 // Compression middleware
 app.use(compression());
