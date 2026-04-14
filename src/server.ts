@@ -19,7 +19,7 @@ const NODE_ENV = process.env.NODE_ENV || "development";
 app.use(helmet());
 
 app.use(cors({
-  origin: true,
+  origin: "*",
   credentials: true
 }));
 
