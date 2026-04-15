@@ -54,7 +54,7 @@ app.get("/health", (req, res) => {
 // Root endpoint
 app.get("/", (req, res) => {
   res.json({
-    message: "Todo Railway Backend API 🚀",
+    message: "Todo Railway Backend API",
     version: process.env.npm_package_version || "1.0.0",
     environment: NODE_ENV,
     endpoints: {
